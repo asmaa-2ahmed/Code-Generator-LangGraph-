@@ -1,0 +1,45 @@
+assets/
+src/assets/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+RAG_env/
+
+# Chroma persistent DB (rebuilt at runtime)
+humaneval_db/
+
+# Jupyter / Colab notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Tests / CI
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets — never bake these into the image
+.env
+*.env
