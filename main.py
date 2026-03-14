@@ -1,25 +1,3 @@
-# main.py
-"""
-Self-Learning RAG Code Assistant — main entry point.
-
-Run from the project root:
-    python main.py
-
-What happens
-------------
-1. Ingest the HumanEval dataset into Chroma (first-run only).
-2. Print the graph topology.
-3. Run the full end-to-end integration test suite.
-"""
-
-import sys
-
-# ── Setup ─────────────────────────────────────────────────────
-# Ensure the project root is on sys.path when running with
-# `python main.py` instead of `python -m main`
-import os
-# sys.path.insert(0, os.path.dirname(__file__))
-
 from src.memory.vectorstore import load_humaneval
 from src.graph.builder import app, run, learn_new_function
 
@@ -85,10 +63,10 @@ def run_integration_tests() -> None:
     msg = learn_new_function(
         function_name="quantum_entangle",
         code="""
-def quantum_entangle(qubit_a, qubit_b):
-    # Simplified Bell state simulation
-    return (qubit_a + qubit_b) / 2
-""",
+                def quantum_entangle(qubit_a, qubit_b):
+                    # Simplified Bell state simulation
+                    return (qubit_a + qubit_b) / 2
+            """,
         explanation=(
             "Simulates basic quantum entanglement by averaging two qubit states."
         ),
@@ -114,7 +92,6 @@ def quantum_entangle(qubit_a, qubit_b):
     print(resp)
 
     _section("Test 8 — Unknown intent graceful fallback")
-    # Force idk by sending an ambiguous non-query
     resp = run("asdfghjkl qwerty 12345", THREAD)
     print(resp)
 
