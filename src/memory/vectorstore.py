@@ -1,16 +1,3 @@
-# src/memory/vectorstore.py
-"""
-Vector store + retrieval layer.
-
-Responsibilities
-----------------
-- Lazy singletons for the embedding model and Chroma vector store.
-- Load the HumanEval benchmark into Chroma (one-shot setup).
-- Confidence-gated similarity search for the retrieve node.
-- Store user-taught functions for the self-learning flow.
-- Build RAG context strings consumed by the generate node.
-"""
-
 from __future__ import annotations
 
 from langchain_community.vectorstores import Chroma
@@ -18,14 +5,8 @@ from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 import pandas as pd
 
-from src.config import (
-    CHROMA_COLLECTION,
-    CHROMA_PERSIST_DIR,
-    EMBEDDING_MODEL_ID,
-    HUMANEVAL_PARQUET_URL,
-    MAX_DISTANCE,
-    RETRIEVAL_K,
-)
+from src.config import (CHROMA_COLLECTION, CHROMA_PERSIST_DIR, EMBEDDING_MODEL_ID, 
+                        HUMANEVAL_PARQUET_URL, MAX_DISTANCE, RETRIEVAL_K )
 
 # ============================================================
 # Lazy Singletons
@@ -102,15 +83,6 @@ def get_retriever():
 
 
 def retrieve_with_confidence(query: str) -> tuple[Document | None, bool, str]:
-    """
-    Single-shot similarity search with a confidence gate.
-
-    Returns
-    -------
-    doc      : The closest Document (or None if empty collection).
-    known    : True when L2 distance < MAX_DISTANCE.
-    doc_type : "user_taught" | "humaneval" | ""
-    """
     results = get_vectorstore().similarity_search_with_score(query, k=1)
 
     if not results:
@@ -131,12 +103,7 @@ def retrieve_with_confidence(query: str) -> tuple[Document | None, bool, str]:
 # Self-Learning
 # ============================================================
 
-def learn_new_function(
-    function_name: str,
-    code: str,
-    explanation: str,
-    original_query: str = "",
-) -> str:
+def learn_new_function(function_name: str, code: str, explanation: str, original_query: str = "" ) -> str:
     """Embed and store a user-taught function in Chroma."""
     label = original_query or function_name
     document_text = (
@@ -174,69 +141,3 @@ def build_rag_context(query: str) -> str:
 def build_taught_context(doc: Document) -> str:
     """Format a single user-taught document as a context block."""
     return f"Learned function:\n{doc.page_content}"
-
-
-# # ============================================================
-# # Smoke Test
-# # ============================================================
-# if __name__ == "__main__":
-#     print("=" * 55)
-#     print("🔧  vectorstore.py — Smoke Test")
-#     print("=" * 55)
-
-#     # 1. Embedding model
-#     em = get_embedding_model()
-#     test_embed = em.embed_query("hello world")
-#     assert len(test_embed) > 0, "❌  Embedding returned empty vector"
-#     print(f"✅  Embedding model OK  (dim={len(test_embed)})")
-
-#     # 2. Vectorstore instantiated
-#     vs = get_vectorstore()
-#     assert vs is not None
-#     print("✅  Chroma vectorstore instantiated")
-
-#     # 3. Add a dummy doc + search
-#     dummy = Document(
-#         page_content="def palindrome(s): return s == s[::-1]",
-#         metadata={"solution": "return s == s[::-1]", "type": "smoke_test"},
-#     )
-#     vs.add_documents([dummy])
-#     hits = vs.similarity_search("check palindrome", k=1)
-#     assert hits, "❌  similarity_search returned nothing"
-#     print(f"✅  Similarity search OK  → '{hits[0].page_content[:50]}...'")
-
-#     # 4. Confidence gate
-#     doc, known, doc_type = retrieve_with_confidence("check palindrome")
-#     print(f"✅  retrieve_with_confidence → known={known}, doc_type='{doc_type}'")
-
-#     # 5. learn_new_function
-#     msg = learn_new_function(
-#         function_name="smoke_fn",
-#         code="def smoke_fn(): pass",
-#         explanation="Smoke test placeholder.",
-#         original_query="write a smoke test function",
-#     )
-#     assert "smoke_fn" in msg
-#     print(f"✅  learn_new_function → {msg}")
-
-#     # 6. Retriever helper
-#     ret = get_retriever()
-#     assert hasattr(ret, "invoke")
-#     docs = ret.invoke("add two numbers")
-#     assert isinstance(docs, list)
-#     print(f"✅  get_retriever().invoke() → {len(docs)} docs")
-
-#     # 7. Context builders
-#     ctx = build_rag_context("check palindrome")
-#     assert isinstance(ctx, str) and len(ctx) > 0
-#     print(f"✅  build_rag_context → {len(ctx)} chars")
-
-#     taught_doc = Document(
-#         page_content="Query: ...\nFunction: foo\nCode:\ndef foo(): pass\nExplanation: nothing",
-#         metadata={"type": "user_taught", "function_name": "foo"},
-#     )
-#     taught_ctx = build_taught_context(taught_doc)
-#     assert "Learned function:" in taught_ctx and "foo" in taught_ctx
-#     print(f"✅  build_taught_context → {len(taught_ctx)} chars")
-
-#     print("\n🎉  vectorstore.py is healthy!")

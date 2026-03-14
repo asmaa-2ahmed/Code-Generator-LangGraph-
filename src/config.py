@@ -1,21 +1,11 @@
-# src/config.py
-"""
-Central configuration for the Self-Learning RAG Code Assistant.
-
-Contains:
-  - HuggingFace / OpenAI-compatible API settings
-  - LLM model registry and factory
-  - All system prompt strings
-  - Tunable hyper-parameters (thresholds, limits)
-"""
-
 import os
 from typing import Literal
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
 
-load_dotenv()  # load .env file if present
+load_dotenv() 
+
 # ============================================================
 # API Settings
 # ============================================================
@@ -56,12 +46,6 @@ LLMRole = Literal["code", "explain", "self_learning"]
 
 
 def make_llm(role: LLMRole) -> ChatOpenAI:
-    """
-    Instantiate a ChatOpenAI client for the given role.
-
-    The ``self_learning`` role receives an extra ``tiktoken_model_name``
-    so token-counting works correctly when used for summarisation.
-    """
     cfg = LLM_MODELS[role]
     extra = (
         {"tiktoken_model_name": "gpt-3.5-turbo"} if role == "self_learning" else {}
@@ -74,9 +58,8 @@ def make_llm(role: LLMRole) -> ChatOpenAI:
         **extra,
     )
 
-# ============================================================
-# System Prompts
-# ============================================================
+
+# ====  System Prompts  =============================================
 SYSTEM_CODE: str = """
 You are a senior Python software engineer.
 For each problem:
@@ -108,9 +91,7 @@ Distil the conversation below into a single concise paragraph that
 preserves the most important context (names, decisions, code produced).
 """
 
-# ============================================================
-# Tunable Hyper-parameters
-# ============================================================
+# ====  Parameters  ========================================
 MAX_DISTANCE: float = 1.2    # L2 distance threshold for confidence gate
 RETRIEVAL_K:  int   = 3      # number of similar docs to retrieve
 SUMMARY_THRESHOLD: int = 8   # compress messages above this count
@@ -123,39 +104,3 @@ EMBEDDING_MODEL_ID:    str = "sentence-transformers/all-MiniLM-L6-v2"
 CHROMA_COLLECTION:     str = "code_generator_collection"
 CHROMA_PERSIST_DIR:    str = os.path.join(assets_dir, "humaneval_db")
 HUMANEVAL_PARQUET_URL: str = "hf://datasets/openai/openai_humaneval/openai_humaneval/test-00000-of-00001.parquet"
-
-# ============================================================
-# Smoke Test
-# ============================================================
-if __name__ == "__main__":
-    print("=" * 55)
-    print("🔧  config.py — Smoke Test")
-    print("=" * 55)
-
-    # 1. Token present
-    assert HF_TOKEN, "❌ HF_TOKEN is empty"
-    print(f"✅  HF_TOKEN found  (length={len(HF_TOKEN)})")
-
-    # 2. LLM factory — only check object type, don't call API
-    for role in ("code", "explain", "self_learning"):
-        llm = make_llm(role)          # type: ignore[arg-type]
-        assert isinstance(llm, ChatOpenAI), f"❌  make_llm('{role}') returned wrong type"
-        print(f"✅  make_llm('{role}') → {llm.model_name}")
-
-    # 3. Prompts are non-empty strings
-    for name, prompt in [
-        ("SYSTEM_CODE",      SYSTEM_CODE),
-        ("SYSTEM_EXPLAIN",   SYSTEM_EXPLAIN),
-        ("SYSTEM_INTENT",    SYSTEM_INTENT),
-        ("SYSTEM_SUMMARISE", SYSTEM_SUMMARISE),
-    ]:
-        assert isinstance(prompt, str) and prompt.strip(), f"❌  {name} is empty"
-        print(f"✅  {name}  ({len(prompt.split())} words)")
-
-    # 4. Numeric constants
-    assert 0 < MAX_DISTANCE < 10
-    assert RETRIEVAL_K > 0
-    assert SUMMARY_THRESHOLD > 0
-    print(f"✅  Hyper-params OK  (MAX_DISTANCE={MAX_DISTANCE}, K={RETRIEVAL_K})")
-
-    print("\n🎉  config.py is healthy!")

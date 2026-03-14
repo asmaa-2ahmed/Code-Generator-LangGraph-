@@ -76,33 +76,17 @@ def run(user_query: str, thread_id: str = "default") -> str:
     result = app.invoke({"user_input": user_query}, config=config)
     return result["response"]
 
+def run_with_meta(user_query: str, thread_id: str = "default") -> dict:
+    config = {"configurable": {"thread_id": thread_id}}
+    result = app.invoke({"user_input": user_query}, config=config)
+    return {
+        "mode":      result.get("intent", "generate"),
+        "response":  result.get("response", ""),
+        "thread_id": thread_id,
+    }
 
 def learn_new_function(function_name: str, code: str, explanation: str, thread_id: str = "default",) -> str:
-    """
-    Teach the system a new function and clear the pending_query state.
-
-    Workflow
-    --------
-    1. Read ``pending_query`` from the graph's checkpoint for this thread.
-    2. Call ``_store_function`` to embed + persist the document in Chroma.
-    3. Clear ``pending_query`` in the checkpoint via ``app.update_state``.
-
-    Parameters
-    ----------
-    function_name : str
-        Python identifier for the new function (e.g. ``"quantum_entangle"``).
-    code          : str
-        Full function source code.
-    explanation   : str
-        Plain-text description of the function.
-    thread_id     : str
-        Must match the thread that triggered the ``self_learning`` response.
-
-    Returns
-    -------
-    str
-        Confirmation message.
-    """
+    
     config = {"configurable": {"thread_id": thread_id}}
 
     # Pull the pending query from checkpoint state (may be empty string)
@@ -122,49 +106,3 @@ def learn_new_function(function_name: str, code: str, explanation: str, thread_i
 
     return msg
 
-
-# # ============================================================
-# # Smoke Test
-# # ============================================================
-# if __name__ == "__main__":
-#     print("=" * 55)
-#     print("🔧  builder.py — Smoke Test")
-#     print("=" * 55)
-
-#     # 1. Graph compiles without errors
-#     assert app is not None
-#     print("✅  Graph compiled successfully")
-
-#     # 2. Graph structure (grandalf optional for ASCII rendering)
-#     try:
-#         ascii_graph = app.get_graph().draw_ascii()
-#         assert len(ascii_graph) > 0
-#         print("✅  ASCII graph rendered:")
-#         print(ascii_graph)
-#     except ImportError:
-#         node_names = list(app.get_graph().nodes.keys())
-#         print(f"✅  Graph nodes (install grandalf for ASCII art): {node_names}")
-
-#     # 3. All expected nodes present
-#     expected_nodes = {
-#         "classify_intent", "generate", "retrieve",
-#         "generate_code", "explain", "summarise",
-#     }
-#     actual_nodes = set(app.get_graph().nodes.keys()) - {"__start__", "__end__"}
-#     missing = expected_nodes - actual_nodes
-#     assert not missing, f"❌  Missing nodes: {missing}"
-#     print(f"✅  All {len(expected_nodes)} nodes present in graph")
-
-#     # 4. run() returns a string (calls the real graph / API)
-#     try:
-#         response = run(
-#             "Write a Python function that checks if a number is even",
-#             thread_id="smoke-test-thread",
-#         )
-#         assert isinstance(response, str) and len(response) > 0
-#         print(f"✅  run() returned a response ({len(response)} chars)")
-#         print(f"   Preview: {response[:200].replace(chr(10),' ')} ...")
-#     except Exception as exc:
-#         print(f"⚠️   run() skipped — API unreachable ({exc})")
-
-#     print("\n🎉  builder.py is healthy!")

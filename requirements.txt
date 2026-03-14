@@ -16,3 +16,9 @@ uvicorn[standard]
 pydantic>=2.0
 python-dotenv
 grandalf
+
+pyarrow
+typing_extensions
+
+# API
+python-multipart>=0.0.9
